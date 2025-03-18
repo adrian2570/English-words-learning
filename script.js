@@ -9,7 +9,7 @@ const exampleText = document.getElementById("example-text");
 const instructions = document.getElementById("instructions");
 const wordBox = document.querySelector('.word-box');
 
-let wordsData =; // Renamed to avoid conflict with CSV column name
+let wordsData =;
 let currentWordIndex = 0;
 let touchStartX = null;
 let touchEndX = null;
@@ -21,15 +21,22 @@ async function loadWordsFromCSV(filePath) {
         const csvData = await response.text();
         const lines = csvData.trim().split('\n');
         const headers = lines[0].split(',');
+        const newWordsIndex = headers.indexOf("New Words");
+        const examplesIndex = headers.indexOf("Examples");
         const data =;
+
+        if (newWordsIndex === -1 || examplesIndex === -1) {
+            questionText.textContent = "Error: CSV file must have columns 'New Words' and 'Examples'.";
+            return;
+        }
 
         for (let i = 1; i < lines.length; i++) {
             const values = lines[i].split(',');
-            const wordObject = {};
-            for (let j = 0; j < headers.length; j++) {
-                wordObject[headers[j].trim()] = values[j].trim();
+            if (values.length > newWordsIndex && values.length > examplesIndex) {
+                const newWords = values[newWordsIndex].trim().split(' '); // Split into array of words
+                const example = values[examplesIndex].trim();
+                data.push({ words: newWords, sentence: example });
             }
-            data.push(wordObject);
         }
         wordsData = data;
         displayQuestion();
@@ -41,12 +48,18 @@ async function loadWordsFromCSV(filePath) {
 
 function displayQuestion() {
     if (currentWordIndex < wordsData.length) {
-        questionText.textContent = wordsData[currentWordIndex].sentence;
+        const currentWordData = wordsData[currentWordIndex];
+        let sentence = currentWordData.sentence;
+        currentWordData.words.forEach(word => {
+            const regex = new RegExp(word, 'gi');
+            sentence = sentence.replace(regex, "____");
+        });
+        questionText.textContent = sentence;
         answerInput.value = "";
         exampleText.style.display = "none";
-        exampleText.innerHTML = ""; // Clear previous feedback
+        exampleText.innerHTML = "";
         definitionText.style.display = "none";
-        definitionText.innerHTML = ""; // Clear previous definitions
+        definitionText.innerHTML = "";
         checkAnswerButton.textContent = "Check Answer";
     } else {
         questionText.textContent = "You've reached the end of the quiz!";
@@ -60,44 +73,60 @@ function displayQuestion() {
 
 checkAnswerButton.addEventListener("click", function() {
     const userAnswer = answerInput.value.trim().toLowerCase();
-    const correctWords = wordsData[currentWordIndex].words.toLowerCase().split(',');
-    const userAnswers = userAnswer.split(',').map(answer => answer.trim());
+    const correctWords = wordsData[currentWordIndex].words.map(word => word.trim().toLowerCase());
+    const userAnswers = userAnswer.split(',').map(answer => answer.trim().toLowerCase());
     let feedback = "";
     let allCorrect = true;
+    const originalSentence = wordsData[currentWordIndex].sentence;
 
-    for (let i = 0; i < correctWords.length; i++) {
-        const correctWord = correctWords[i].trim();
-        if (i < userAnswers.length && userAnswers[i].trim() === correctWord) {
-            feedback += `<span class="correct-word">${correctWord}</span> `;
+    const feedbackSentenceParts = originalSentence.split(new RegExp(correctWords.map(word => `(${word})`).join('|'), 'gi'));
+    let feedbackIndex = 0;
+
+    feedbackSentenceParts.forEach(part => {
+        const trimmedPart = part.trim();
+        if (trimmedPart) {
+            const foundIndex = correctWords.findIndex(word => trimmedPart.toLowerCase() === word);
+            if (foundIndex !== -1 && feedbackIndex < userAnswers.length && userAnswers[feedbackIndex] === correctWords[foundIndex]) {
+                feedback += `<span class="correct-word">${trimmedPart}</span>`;
+                feedbackIndex++;
+            } else if (foundIndex !== -1) {
+                feedback += `<span class="incorrect-word">${trimmedPart}</span>`;
+                allCorrect = false;
+                feedbackIndex++;
+            } else {
+                feedback += part;
+            }
         } else {
-            feedback += `<span class="incorrect-word">${correctWord}</span> `;
-            allCorrect = false;
+            if (feedbackIndex < userAnswers.length && correctWords.includes(userAnswers[feedbackIndex])) {
+                feedback += `<span class="correct-word">${correctWords[correctWords.findIndex(word => word === userAnswers[feedbackIndex])]}</span>`;
+                feedbackIndex++;
+            } else if (feedbackIndex < correctWords.length) {
+                feedback += `<span class="incorrect-word">${correctWords[feedbackIndex]}</span>`;
+                allCorrect = false;
+                feedbackIndex++;
+            }
         }
+    });
+
+    if (userAnswers.length !== correctWords.length) {
+        feedback = "Please provide the correct number of words.";
+        allCorrect = false;
+    } else if (allCorrect) {
+        exampleText.innerHTML = "Correct! The sentence was: " + originalSentence;
+    } else {
+        exampleText.innerHTML = "Incorrect. The sentence was: " + feedback;
     }
 
-    exampleText.innerHTML = allCorrect ? "Correct! The sentence was: " + wordsData[currentWordIndex].sentence.replace(/____/g, (match, i) => `<span class="correct-word">${correctWords[i].trim()}</span>`) : "Incorrect. The sentence was: " + wordsData[currentWordIndex].sentence.replace(/____/g, (match, i) => `<span class="${i < userAnswers.length && userAnswers[i].trim() === correctWords[i].trim() ? 'correct-word' : 'incorrect-word'}">${correctWords[i].trim()}</span>`);
     exampleText.style.display = "block";
 });
 
-showDefinitionButton.addEventListener("click", function() {
-    const definitions = wordsData[currentWordIndex].definition.split(',');
-    let definitionHTML = "";
-    const correctWords = wordsData[currentWordIndex].words.split(',');
-
-    if (definitions.length === correctWords.length) {
-        for (let i = 0; i < definitions.length; i++) {
-            definitionHTML += `<p><strong>${correctWords[i].trim()}:</strong> ${definitions[i].trim()}</p>`;
-        }
-    } else {
-        definitionHTML = "<p>Definitions not available in the expected format.</p>";
-    }
-    definitionText.innerHTML = definitionHTML;
-    definitionText.style.display = "block";
-});
+showDefinitionButton.style.display = "none"; // Keeping definition hidden for now
 
 speakButton.addEventListener("click", function() {
-    const wordsToSpeak = wordsData[currentWordIndex].words.split(',')[0]; // Speak the first missing word
-    speakText(wordsToSpeak.trim());
+    const firstWordToSpeak = wordsData[currentWordIndex].words[0]; // Speak the first word
+    if (firstWordToSpeak) {
+        speakText(firstWordToSpeak.trim());
+    }
 });
 
 nextButton.addEventListener("click", function() {
