@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>English Word Quiz</title>
+    <title>English Word Quiz - Learn and Remember</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
@@ -16,65 +16,126 @@
             margin-bottom: 20px;
         }
 
-        #word-title {
-            font-size: 1.5em;
+        #instructions {
+            font-size: 0.9em;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        #question-text {
+            font-size: 1.2em;
             margin-bottom: 15px;
         }
 
-        #show-example {
+        #answer-input {
+            padding: 10px;
+            font-size: 1em;
+            margin-bottom: 10px;
+        }
+
+        .button-container {
+            margin-bottom: 15px;
+        }
+
+        .button-container button {
             padding: 10px 20px;
             font-size: 1em;
             cursor: pointer;
+            margin-right: 10px;
+        }
+
+        #definition-text {
+            display: none;
+            margin-top: 10px;
+            font-size: 1em;
+            color: navy;
+            border: 1px solid #eee;
+            padding: 10px;
+            background-color: #f9f9f9;
         }
 
         #example-text {
             display: none;
-            margin-top: 15px;
+            margin-top: 10px;
             font-size: 1.1em;
+            color: green; /* For correct answers */
         }
 
-        #speak-button { /* Style the speak button */
-            padding: 10px 20px;
-            font-size: 1em;
-            cursor: pointer;
-            margin-top: 15px;
+        .incorrect {
+            color: red !important;
         }
     </style>
 </head>
 <body>
 
 <div class="word-box">
-    <h2 id="word-title">Word</h2>
-    <button id="show-example">Show Example</button>
+    <p id="instructions">Fill in the missing word and learn more!</p>
+    <p id="question-text">Fill in the missing word:</p>
+    <input type="text" id="answer-input" placeholder="Type your answer here">
+    <div class="button-container">
+        <button id="check-answer">Check Answer</button>
+        <button id="show-definition">Show Definition</button>
+        <button id="speak-button">Speak Word</button>
+    </div>
+    <p id="definition-text"></p>
     <p id="example-text"></p>
-    <button id="speak-button">Speak Word</button>  </div>
+</div>
 
 <script>
     // Sample data (replace with loading from CSV later)
     const words = [
-        { word: "Annie developed an injury...", example: "That spring, Annie developed an injury..." },
-        { word: "she needed to wear...", example: "This meant limited activities..." },
-        // ... more words
+        {
+            sentence: "That spring, Annie ________ an injury...",
+            word: "developed",
+            definition: "To grow or become more mature, advanced, or elaborate."
+        },
+        {
+            sentence: "This meant limited activities as ________ she needed to wear...",
+            word: "she",
+            definition: "Used to refer to a female person or animal previously mentioned or easily identified."
+        },
+        // ... more words with 'sentence', 'word', and 'definition'
     ];
 
-    const wordTitle = document.getElementById("word-title");
-    const showExampleButton = document.getElementById("show-example");
+    const questionText = document.getElementById("question-text");
+    const answerInput = document.getElementById("answer-input");
+    const checkAnswerButton = document.getElementById("check-answer");
+    const showDefinitionButton = document.getElementById("show-definition");
+    const speakButton = document.getElementById("speak-button");
+    const definitionText = document.getElementById("definition-text");
     const exampleText = document.getElementById("example-text");
-    const speakButton = document.getElementById("speak-button");  // Get speak button
+    const instructions = document.getElementById("instructions");
 
     let currentWordIndex = 0;
 
-    function displayWord() {
-        wordTitle.textContent = words[currentWordIndex].word;
+    function displayQuestion() {
+        const currentWordData = words[currentWordIndex];
+        const blankSentence = currentWordData.sentence.replace(currentWordData.word, "________"); // Replace the word with blanks
+        questionText.textContent = blankSentence;
+        answerInput.value = ""; // Clear previous answer
         exampleText.style.display = "none";
-        showExampleButton.textContent = "Show Example";
-        showExampleButton.style.display = "block";
+        exampleText.classList.remove("incorrect"); // Remove any previous incorrect styling
+        definitionText.style.display = "none"; // Hide definition initially
+        checkAnswerButton.textContent = "Check Answer";
     }
 
-    showExampleButton.addEventListener("click", function() {
-        exampleText.textContent = words[currentWordIndex].example;
-        exampleText.style.display = "block";
-        showExampleButton.style.display = "none";
+    checkAnswerButton.addEventListener("click", function() {
+        const userAnswer = answerInput.value.trim().toLowerCase();
+        const correctAnswer = words[currentWordIndex].word.toLowerCase();
+
+        if (userAnswer === correctAnswer) {
+            exampleText.textContent = `Correct! The word is "${words[currentWordIndex].word}".`;
+            exampleText.style.display = "block";
+        } else {
+            exampleText.textContent = `Incorrect. The correct word is "${words[currentWordIndex].word}".`;
+            exampleText.style.display = "block";
+            exampleText.classList.add("incorrect");
+        }
+    });
+
+    showDefinitionButton.addEventListener("click", function() {
+        definitionText.textContent = words[currentWordIndex].definition;
+        definitionText.style.display = "block";
     });
 
     speakButton.addEventListener("click", function() {  // Speak button click
@@ -88,7 +149,7 @@
     }
 
     // Initial display
-    displayWord();
+    displayQuestion();
 </script>
 
 </body>
