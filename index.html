@@ -1,156 +1,109 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>English Word Quiz - Learn and Remember</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            font-family: sans-serif;
-            margin: 0;
-            padding: 20px;
-        }
+const questionText = document.getElementById("question-text");
+const answerInput = document.getElementById("answer-input");
+const checkAnswerButton = document.getElementById("check-answer");
+const showDefinitionButton = document.getElementById("show-definition");
+const speakButton = document.getElementById("speak-button");
+const nextButton = document.getElementById("next-button");
+const definitionText = document.getElementById("definition-text");
+const exampleText = document.getElementById("example-text");
+const progressBar = document.getElementById("progress-bar");
+const wordBox = document.querySelector('.word-box');
 
-        .word-box {
-            border: 1px solid #ccc;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
+let words = [];
+let currentWordIndex = 0;
+let touchStartX = null;
+let touchEndX = null;
+const swipeThreshold = 50;
 
-        #instructions {
-            font-size: 0.9em;
-            color: #555;
-            margin-bottom: 10px;
-        }
+async function loadWordsFromCSV(filePath) {
+    try {
+        const response = await fetch(filePath);
+        const csvData = await response.text();
+        const lines = csvData.trim().split('\n');
+        const headers = lines[0].split(',').map(header => header.trim());
 
-        #question-text {
-            font-size: 1.2em;
-            margin-bottom: 15px;
-        }
+        words = lines.slice(1).map(line => {
+            const values = line.split(',').map(value => value.trim());
+            return Object.fromEntries(headers.map((key, i) => [key, values[i]]));
+        });
 
-        #answer-input {
-            padding: 10px;
-            font-size: 1em;
-            margin-bottom: 10px;
-        }
+        displayQuestion();
+    } catch (error) {
+        console.error("Error loading CSV:", error);
+        questionText.textContent = "Error loading word list.";
+    }
+}
 
-        .button-container {
-            margin-bottom: 15px;
-        }
-
-        .button-container button {
-            padding: 10px 20px;
-            font-size: 1em;
-            cursor: pointer;
-            margin-right: 10px;
-        }
-
-        #definition-text {
-            display: none;
-            margin-top: 10px;
-            font-size: 1em;
-            color: navy;
-            border: 1px solid #eee;
-            padding: 10px;
-            background-color: #f9f9f9;
-        }
-
-        #example-text {
-            display: none;
-            margin-top: 10px;
-            font-size: 1.1em;
-            color: green; /* For correct answers */
-        }
-
-        .incorrect {
-            color: red !important;
-        }
-    </style>
-</head>
-<body>
-
-<div class="word-box">
-    <p id="instructions">Fill in the missing word and learn more!</p>
-    <p id="question-text">Fill in the missing word:</p>
-    <input type="text" id="answer-input" placeholder="Type your answer here">
-    <div class="button-container">
-        <button id="check-answer">Check Answer</button>
-        <button id="show-definition">Show Definition</button>
-        <button id="speak-button">Speak Word</button>
-    </div>
-    <p id="definition-text"></p>
-    <p id="example-text"></p>
-</div>
-
-<script>
-    // Sample data (replace with loading from CSV later)
-    const words = [
-        {
-            sentence: "That spring, Annie ________ an injury...",
-            word: "developed",
-            definition: "To grow or become more mature, advanced, or elaborate."
-        },
-        {
-            sentence: "This meant limited activities as ________ she needed to wear...",
-            word: "she",
-            definition: "Used to refer to a female person or animal previously mentioned or easily identified."
-        },
-        // ... more words with 'sentence', 'word', and 'definition'
-    ];
-
-    const questionText = document.getElementById("question-text");
-    const answerInput = document.getElementById("answer-input");
-    const checkAnswerButton = document.getElementById("check-answer");
-    const showDefinitionButton = document.getElementById("show-definition");
-    const speakButton = document.getElementById("speak-button");
-    const definitionText = document.getElementById("definition-text");
-    const exampleText = document.getElementById("example-text");
-    const instructions = document.getElementById("instructions");
-
-    let currentWordIndex = 0;
-
-    function displayQuestion() {
-        const currentWordData = words[currentWordIndex];
-        const blankSentence = currentWordData.sentence.replace(currentWordData.word, "________"); // Replace the word with blanks
-        questionText.textContent = blankSentence;
-        answerInput.value = ""; // Clear previous answer
-        exampleText.style.display = "none";
-        exampleText.classList.remove("incorrect"); // Remove any previous incorrect styling
-        definitionText.style.display = "none"; // Hide definition initially
-        checkAnswerButton.textContent = "Check Answer";
+function displayQuestion() {
+    if (currentWordIndex >= words.length) {
+        questionText.textContent = "You've completed the quiz!";
+        [answerInput, checkAnswerButton, showDefinitionButton, speakButton, nextButton].forEach(el => el.style.display = "none");
+        return;
     }
 
-    checkAnswerButton.addEventListener("click", function() {
-        const userAnswer = answerInput.value.trim().toLowerCase();
-        const correctAnswer = words[currentWordIndex].word.toLowerCase();
+    const { sentence, word } = words[currentWordIndex];
+    const wordList = word.split(' ');
+    let blankSentence = sentence;
 
-        if (userAnswer === correctAnswer) {
-            exampleText.textContent = `Correct! The word is "${words[currentWordIndex].word}".`;
-            exampleText.style.display = "block";
-        } else {
-            exampleText.textContent = `Incorrect. The correct word is "${words[currentWordIndex].word}".`;
-            exampleText.style.display = "block";
-            exampleText.classList.add("incorrect");
-        }
+    wordList.forEach(w => {
+        const regex = new RegExp(`\\b${w}\\b`, 'gi');
+        blankSentence = blankSentence.replace(regex, '________');
     });
 
-    showDefinitionButton.addEventListener("click", function() {
-        definitionText.textContent = words[currentWordIndex].definition;
-        definitionText.style.display = "block";
-    });
+    questionText.textContent = blankSentence;
+    answerInput.value = "";
+    definitionText.style.display = "none";
+    exampleText.style.display = "none";
+    progressBar.style.width = `${((currentWordIndex + 1) / words.length) * 100}%`;
+}
 
-    speakButton.addEventListener("click", function() {  // Speak button click
-        const wordToSpeak = words[currentWordIndex].word;
-        speakText(wordToSpeak);
-    });
+checkAnswerButton.addEventListener("click", function() {
+    const userAnswers = answerInput.value.trim().toLowerCase().split(' ');
+    const correctAnswers = words[currentWordIndex].word.toLowerCase().split(' ');
 
-    function speakText(text) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        speechSynthesis.speak(utterance);
+    if (JSON.stringify(userAnswers.sort()) === JSON.stringify(correctAnswers.sort())) {
+        exampleText.textContent = "Correct!";
+        exampleText.classList.add("correct");
+    } else {
+        exampleText.textContent = `Incorrect. Correct words: ${words[currentWordIndex].word}`;
+        exampleText.classList.add("incorrect");
     }
+    exampleText.style.display = "block";
+});
 
-    // Initial display
-    displayQuestion();
-</script>
+showDefinitionButton.addEventListener("click", function() {
+    definitionText.textContent = words[currentWordIndex].definition;
+    definitionText.style.display = "block";
+});
 
-</body>
-</html>
+speakButton.addEventListener("click", function() {
+    speechSynthesis.speak(new SpeechSynthesisUtterance(words[currentWordIndex].word));
+});
+
+nextButton.addEventListener("click", function() {
+    if (currentWordIndex < words.length - 1) {
+        currentWordIndex++;
+        displayQuestion();
+    }
+});
+
+wordBox.addEventListener('touchstart', event => touchStartX = event.changedTouches[0].screenX);
+wordBox.addEventListener('touchend', event => {
+    touchEndX = event.changedTouches[0].screenX;
+    handleSwipe();
+});
+
+function handleSwipe() {
+    if (!touchStartX || !touchEndX) return;
+    const deltaX = touchEndX - touchStartX;
+    if (deltaX < -swipeThreshold && currentWordIndex < words.length - 1) {
+        currentWordIndex++;
+        displayQuestion();
+    } else if (deltaX > swipeThreshold && currentWordIndex > 0) {
+        currentWordIndex--;
+        displayQuestion();
+    }
+    touchStartX = touchEndX = null;
+}
+
+loadWordsFromCSV('English_Learning.csv');
