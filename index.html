@@ -1,109 +1,102 @@
-const questionText = document.getElementById("question-text");
-const answerInput = document.getElementById("answer-input");
-const checkAnswerButton = document.getElementById("check-answer");
-const showDefinitionButton = document.getElementById("show-definition");
-const speakButton = document.getElementById("speak-button");
-const nextButton = document.getElementById("next-button");
-const definitionText = document.getElementById("definition-text");
-const exampleText = document.getElementById("example-text");
-const progressBar = document.getElementById("progress-bar");
-const wordBox = document.querySelector('.word-box');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>English Word Quiz - Learn Multiple Words</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="An interactive English word quiz to help you learn multiple words within sentences.">
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
 
-let words = [];
-let currentWordIndex = 0;
-let touchStartX = null;
-let touchEndX = null;
-const swipeThreshold = 50;
+        .word-box {
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
 
-async function loadWordsFromCSV(filePath) {
-    try {
-        const response = await fetch(filePath);
-        const csvData = await response.text();
-        const lines = csvData.trim().split('\n');
-        const headers = lines[0].split(',').map(header => header.trim());
+        #instructions {
+            font-size: 0.9em;
+            color: #555;
+            margin-bottom: 10px;
+        }
 
-        words = lines.slice(1).map(line => {
-            const values = line.split(',').map(value => value.trim());
-            return Object.fromEntries(headers.map((key, i) => [key, values[i]]));
-        });
+        #question-text {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
 
-        displayQuestion();
-    } catch (error) {
-        console.error("Error loading CSV:", error);
-        questionText.textContent = "Error loading word list.";
-    }
-}
+        #answer-input {
+            padding: 10px;
+            font-size: 1em;
+            margin-bottom: 10px;
+            width: 80%; /* Adjust width as needed */
+        }
 
-function displayQuestion() {
-    if (currentWordIndex >= words.length) {
-        questionText.textContent = "You've completed the quiz!";
-        [answerInput, checkAnswerButton, showDefinitionButton, speakButton, nextButton].forEach(el => el.style.display = "none");
-        return;
-    }
+        .button-container {
+            margin-bottom: 15px;
+        }
 
-    const { sentence, word } = words[currentWordIndex];
-    const wordList = word.split(' ');
-    let blankSentence = sentence;
+        .button-container button {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            margin-right: 10px;
+        }
 
-    wordList.forEach(w => {
-        const regex = new RegExp(`\\b${w}\\b`, 'gi');
-        blankSentence = blankSentence.replace(regex, '________');
-    });
+        #definition-text {
+            display: none;
+            margin-top: 10px;
+            font-size: 1em;
+            color: navy;
+            border: 1px solid #eee;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
 
-    questionText.textContent = blankSentence;
-    answerInput.value = "";
-    definitionText.style.display = "none";
-    exampleText.style.display = "none";
-    progressBar.style.width = `${((currentWordIndex + 1) / words.length) * 100}%`;
-}
+        #example-text {
+            display: none;
+            margin-top: 10px;
+            font-size: 1.1em;
+            color: green; /* For correct answers */
+        }
 
-checkAnswerButton.addEventListener("click", function() {
-    const userAnswers = answerInput.value.trim().toLowerCase().split(' ');
-    const correctAnswers = words[currentWordIndex].word.toLowerCase().split(' ');
+        .incorrect {
+            color: red !important;
+        }
 
-    if (JSON.stringify(userAnswers.sort()) === JSON.stringify(correctAnswers.sort())) {
-        exampleText.textContent = "Correct!";
-        exampleText.classList.add("correct");
-    } else {
-        exampleText.textContent = `Incorrect. Correct words: ${words[currentWordIndex].word}`;
-        exampleText.classList.add("incorrect");
-    }
-    exampleText.style.display = "block";
-});
+        .correct-word {
+            font-weight: bold;
+            color: green;
+        }
 
-showDefinitionButton.addEventListener("click", function() {
-    definitionText.textContent = words[currentWordIndex].definition;
-    definitionText.style.display = "block";
-});
+        .incorrect-word {
+            font-weight: bold;
+            color: red;
+            text-decoration: line-through;
+        }
+    </style>
+</head>
+<body>
 
-speakButton.addEventListener("click", function() {
-    speechSynthesis.speak(new SpeechSynthesisUtterance(words[currentWordIndex].word));
-});
+<div class="word-box">
+    <p id="instructions">Fill in the missing words (separated by commas) and learn!</p>
+    <p id="question-text"></p>
+    <label for="answer-input">Your Answers (comma-separated):</label>
+    <input type="text" id="answer-input" placeholder="Type the missing words here, separated by commas">
+    <div class="button-container">
+        <button id="check-answer">Check Answer</button>
+        <button id="show-definition">Show Definitions</button>
+        <button id="speak-button">Speak First Word</button>
+        <button id="next-button">Next</button>
+    </div>
+    <p id="definition-text"></p>
+    <p id="example-text"></p>
+</div>
 
-nextButton.addEventListener("click", function() {
-    if (currentWordIndex < words.length - 1) {
-        currentWordIndex++;
-        displayQuestion();
-    }
-});
+<script src="script.js"></script>
 
-wordBox.addEventListener('touchstart', event => touchStartX = event.changedTouches[0].screenX);
-wordBox.addEventListener('touchend', event => {
-    touchEndX = event.changedTouches[0].screenX;
-    handleSwipe();
-});
-
-function handleSwipe() {
-    if (!touchStartX || !touchEndX) return;
-    const deltaX = touchEndX - touchStartX;
-    if (deltaX < -swipeThreshold && currentWordIndex < words.length - 1) {
-        currentWordIndex++;
-        displayQuestion();
-    } else if (deltaX > swipeThreshold && currentWordIndex > 0) {
-        currentWordIndex--;
-        displayQuestion();
-    }
-    touchStartX = touchEndX = null;
-}
-
-loadWordsFromCSV('English_Learning.csv');
+</body>
+</html>
