@@ -1,41 +1,78 @@
-const questionText = document.getElementById("question-text");
+// Get DOM elements
+const sentenceDiv = document.getElementById("sentence");
+const answerInput = document.getElementById("answer-input");
+const submitBtn = document.getElementById("submit-btn");
+const feedbackDiv = document.getElementById("feedback");
+const nextBtn = document.getElementById("next-btn");
 
-async function loadWordsFromCSV(filePath) {
+// Variable to hold the current sentence data
+let currentSentence = null;
+
+// Function to load and parse the CSV file
+async function loadCSV() {
     try {
-        // Fetch the CSV file
-        const response = await fetch(filePath);
+        const response = await fetch('English Learning.csv');
         if (!response.ok) {
-            throw new Error(`Failed to load CSV file: ${response.statusText}`);
+            throw new Error('Failed to load CSV file');
         }
-        const csvData = await response.text();
-
-        // Parse the CSV into lines and filter out empty ones
-        const lines = csvData.trim().split('\n').filter(line => line.trim() !== '');
-        if (lines.length < 2) {
-            throw new Error("CSV file has no data rows.");
+        const csvText = await response.text();
+        const parsed = Papa.parse(csvText, {
+            header: true,
+            skipEmptyLines: true
+        });
+        if (parsed.errors.length > 0) {
+            throw new Error('Error parsing CSV');
         }
-
-        // Split the first line into headers and the rest into data rows
-        const headers = lines[0].split(',').map(h => h.trim());
-        const dataRows = lines.slice(1).map(line => line.split(',').map(cell => cell.trim()));
-
-        // Log headers for debugging (optional)
-        console.log("CSV Headers:", headers);
-
-        // Display the first word and definition (assuming at least 2 columns)
-        if (dataRows.length > 0 && dataRows[0].length >= 2) {
-            const firstRow = dataRows[0];
-            questionText.textContent = `Word: ${firstRow[0]}, Definition: ${firstRow[1]}`;
-        } else {
-            questionText.textContent = "No valid data found in CSV.";
-        }
-
+        return parsed.data;
     } catch (error) {
-        // Handle errors and show them on the webpage
-        console.error("Error loading or parsing CSV:", error);
-        questionText.textContent = `Error: ${error.message}`;
+        console.error(error);
+        sentenceDiv.textContent = 'Error loading sentences. Please check the CSV file.';
+        return [];
     }
 }
 
-// Call the function with your CSV file path
-loadWordsFromCSV('English Learning.csv');
+// Function to select a random sentence and display it with a blank
+function displayRandomSentence(data) {
+    if (data.length === 0) return;
+    const index = Math.floor(Math.random() * data.length);
+    currentSentence = data[index];
+    const sentenceWithBlank = currentSentence.sentence.replace(currentSentence.blank, '___');
+    sentenceDiv.textContent = sentenceWithBlank;
+    answerInput.value = '';
+    feedbackDiv.textContent = '';
+    nextBtn.disabled = true;
+    answerInput.focus(); // Focus on the input field for immediate typing
+}
+
+// Function to check the user's answer
+function checkAnswer() {
+    if (!currentSentence) return;
+    const userAnswer = answerInput.value.trim().toLowerCase();
+    const correctAnswer = currentSentence.blank.toLowerCase();
+    if (userAnswer === '') {
+        feedbackDiv.textContent = 'Please enter an answer.';
+        feedbackDiv.style.color = 'orange';
+    } else if (userAnswer === correctAnswer) {
+        feedbackDiv.textContent = 'Correct!';
+        feedbackDiv.style.color = 'green';
+        nextBtn.disabled = false;
+    } else {
+        feedbackDiv.textContent = 'Incorrect, try again.';
+        feedbackDiv.style.color = 'red';
+    }
+}
+
+// Load the CSV and start the tool
+loadCSV().then(data => {
+    if (data.length > 0) {
+        displayRandomSentence(data);
+        submitBtn.addEventListener('click', checkAnswer);
+        nextBtn.addEventListener('click', () => displayRandomSentence(data));
+        // Allow submitting with Enter key
+        answerInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+    }
+});
