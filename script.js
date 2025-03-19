@@ -7,6 +7,7 @@ const nextBtn = document.getElementById("next-btn");
 
 // Variable to hold the current sentence data
 let currentSentence = null;
+let sentencesData = [];
 
 // Function to load and parse the CSV file
 async function loadCSV() {
@@ -31,6 +32,14 @@ async function loadCSV() {
     }
 }
 
+// Function to speak the sentence using Text-to-Speech
+function speakSentence(text) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US'; // Set language to English
+    utterance.rate = 0.9; // Slightly slower for clarity
+    window.speechSynthesis.speak(utterance);
+}
+
 // Function to select a random sentence and display it with a blank
 function displayRandomSentence(data) {
     if (data.length === 0) return;
@@ -40,8 +49,8 @@ function displayRandomSentence(data) {
     sentenceDiv.textContent = sentenceWithBlank;
     answerInput.value = '';
     feedbackDiv.textContent = '';
-    nextBtn.disabled = true;
-    answerInput.focus(); // Focus on the input field for immediate typing
+    answerInput.focus(); // Focus on the input field
+    speakSentence(sentenceWithBlank); // Read the sentence aloud
 }
 
 // Function to check the user's answer
@@ -55,9 +64,8 @@ function checkAnswer() {
     } else if (userAnswer === correctAnswer) {
         feedbackDiv.textContent = 'Correct!';
         feedbackDiv.style.color = 'green';
-        nextBtn.disabled = false;
     } else {
-        feedbackDiv.textContent = 'Incorrect, try again.';
+        feedbackDiv.textContent = 'Incorrect, try again or move to the next sentence.';
         feedbackDiv.style.color = 'red';
     }
 }
@@ -65,9 +73,10 @@ function checkAnswer() {
 // Load the CSV and start the tool
 loadCSV().then(data => {
     if (data.length > 0) {
-        displayRandomSentence(data);
+        sentencesData = data; // Store the data for reuse
+        displayRandomSentence(sentencesData);
         submitBtn.addEventListener('click', checkAnswer);
-        nextBtn.addEventListener('click', () => displayRandomSentence(data));
+        nextBtn.addEventListener('click', () => displayRandomSentence(sentencesData));
         // Allow submitting with Enter key
         answerInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
