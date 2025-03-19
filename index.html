@@ -3,37 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Question Display</title>
+    <title>English Learning Tool</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f9f9f9;
-        }
-        header {
             text-align: center;
-            margin-bottom: 20px;
+            margin: 20px;
         }
-        #question-text {
+        #sentence {
             font-size: 18px;
-            margin-bottom: 20px;
-            padding: 10px;
-            background-color: #fff;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        #answer-input {
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+        #feedback {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 5px 10px;
+            margin: 5px;
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Question Display</h1>
-    </header>
-    <main>
-        <div id="question-text" role="region" aria-live="polite">Loading questions...</div>
-    </main>
-    <noscript>
-        <p>This page requires JavaScript to function properly. Please enable JavaScript in your browser settings.</p>
-    </noscript>
-    <script src="script.js" defer></script>
+    <h1>English Learning Tool</h1>
+    <p>Fill in the blank with the correct word or phrase.</p>
+    <div id="sentence"></div>
+    <input type="text" id="answer-input" placeholder="Type your answer here">
+    <button id="submit-btn">Submit</button>
+    <div id="feedback"></div>
+    <button id="next-btn" disabled>Next</button>
+
+    <!-- Include PapaParse for CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <!-- Include the JavaScript file -->
+    <script src="script.js"></script>
 </body>
 </html>
