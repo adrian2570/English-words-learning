@@ -1,56 +1,41 @@
-// Get the DOM element where the content will be displayed
 const questionText = document.getElementById("question-text");
 
-// Function to load and parse the CSV file
 async function loadWordsFromCSV(filePath) {
     try {
         // Fetch the CSV file
         const response = await fetch(filePath);
-        
-        // Check if the fetch was successful
         if (!response.ok) {
             throw new Error(`Failed to load CSV file: ${response.statusText}`);
         }
-        
-        // Get the CSV data as text
         const csvData = await response.text();
-        
-        // Parse the CSV data into an array of rows
-        const parsedData = parseCSV(csvData);
-        
-        // Check if the CSV has data
-        if (!parsedData || parsedData.length === 0) {
-            throw new Error("CSV file is empty or invalid.");
+
+        // Parse the CSV into lines and filter out empty ones
+        const lines = csvData.trim().split('\n').filter(line => line.trim() !== '');
+        if (lines.length < 2) {
+            throw new Error("CSV file has no data rows.");
         }
-        
-        // Extract headers (first row) and data (remaining rows)
-        const headers = parsedData[0];
-        const data = parsedData.slice(1);
-        
-        // Log headers for debugging
+
+        // Split the first line into headers and the rest into data rows
+        const headers = lines[0].split(',').map(h => h.trim());
+        const dataRows = lines.slice(1).map(line => line.split(',').map(cell => cell.trim()));
+
+        // Log headers for debugging (optional)
         console.log("CSV Headers:", headers);
-        
-        // Display the first word and its definition (assuming columns: word, definition)
-        if (data.length > 0) {
-            const firstRow = data[0];
-            questionText.textContent = `First word: ${firstRow[0]} - Definition: ${firstRow[1]}`;
+
+        // Display the first word and definition (assuming at least 2 columns)
+        if (dataRows.length > 0 && dataRows[0].length >= 2) {
+            const firstRow = dataRows[0];
+            questionText.textContent = `Word: ${firstRow[0]}, Definition: ${firstRow[1]}`;
         } else {
-            questionText.textContent = "No data found in CSV.";
+            questionText.textContent = "No valid data found in CSV.";
         }
-        
+
     } catch (error) {
-        // Display specific error messages in the DOM
+        // Handle errors and show them on the webpage
         console.error("Error loading or parsing CSV:", error);
         questionText.textContent = `Error: ${error.message}`;
     }
 }
 
-// Simple CSV parser function (handles basic CSV structure)
-function parseCSV(csvText) {
-    const lines = csvText.trim().split('\n');
-    const result = lines.map(line => line.split(',').map(cell => cell.trim()));
-    return result;
-}
-
-// Load the CSV file (replace 'English Learning.csv' with your actual file name)
+// Call the function with your CSV file path
 loadWordsFromCSV('English Learning.csv');
