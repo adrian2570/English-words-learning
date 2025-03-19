@@ -1,34 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>English Learning Tool</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 20px;
-        }
-        #sentence {
-            font-size: 18px;
-            margin-bottom: 10px;
-        }
-        #answer-input {
-            padding: 5px;
-            margin-bottom: 10px;
-        }
-        #feedback {
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        button {
-            padding: 5px 10px;
-            margin: 5px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>English Learning Tool</title>
+  <style>
+    /* Container for centered layout with a max-width */
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f9f9f9;
+    }
+    h1 {
+      font-size: 1.8em;
+      margin-bottom: 10px;
+    }
+    p {
+      font-size: 1em;
+      margin-bottom: 20px;
+    }
+    #sentence {
+      font-size: 1.1em;
+      margin-bottom: 15px;
+      padding: 10px;
+      background: #fff;
+      border-radius: 5px;
+    }
+    #answer-input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      font-size: 1em;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      font-size: 1em;
+      border: none;
+      border-radius: 4px;
+      background-color: #007BFF;
+      color: #fff;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #feedback {
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+    /* Adjust font sizes for smaller screens */
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 1.5em;
+      }
+      #sentence {
+        font-size: 1em;
+      }
+      #answer-input, button {
+        font-size: 0.9em;
+        padding: 8px;
+      }
+    }
+  </style>
 </head>
 <body>
+  <div class="container">
     <h1>English Learning Tool</h1>
     <p>Listen to the sentence and fill in the blank with the correct phrase.</p>
     <div id="sentence"></div>
@@ -36,10 +81,11 @@
     <button id="submit-btn">Submit</button>
     <div id="feedback"></div>
     <button id="next-btn">Next</button>
+  </div>
 
-    <!-- Include PapaParse for CSV parsing -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-    <!-- Include the JavaScript file -->
-    <script src="script.js"></script>
+  <!-- Include PapaParse for CSV parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+  <!-- Include the JavaScript file -->
+  <script src="script.js"></script>
 </body>
 </html>
